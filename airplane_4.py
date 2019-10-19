@@ -5,13 +5,13 @@ from pygame.locals import *
 pygame.init()
 
 # Настройка окна
-WINDOWWIDTH = 800
-WINDOWHEIGHT = 800
+WINDOWWIDTH = 1000
+WINDOWHEIGHT = 1000
 windowSurface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), 0, 32)
 pygame.display.set_caption('Анимация')
 
 # Количество самолетов
-aircrafts = 10
+aircrafts = 20
 
 
 airImageUP = pygame.image.load('airUP.png')
@@ -108,8 +108,12 @@ for i in range(aircrafts):
          'long_iter': long_iter,
          'lost_vec': lost_vec,
          'c1':c1,
+         'health' : 100,
          'image_ch': image_choice(direct),
-         'locator':{'rect_loc': pygame.Rect(x_coord, y_coord, 200, 200),
+         'modesty' : 20,
+         'modesty_count' : 0,
+         'quantity_rocket' : 100,
+         'locator':{'rect_loc': pygame.Rect(x_coord, y_coord, 1000, 1000),
                     'loc_color': WHITE_R}}
     boxes.append(b)
 
@@ -193,13 +197,17 @@ while True:
     for i in range(len(boxes)-1):
         for b in boxes:
             if boxes[i]['rect'].colliderect(b['locator']['rect_loc']):
-                r = {'rect_r': pygame.Rect((roket_coord(b['dir'])),( 5, 5)),
-                     'color': BLUE,
-                     'dir': b['dir'],
-                     'long_iter': 100,
-                     'c1': 0,
-                     }
-                rockets.append(r)
+                if b['modesty_count'] >= b['modesty'] and b['quantity_rocket'] != 0:
+                    r = {'rect_r': pygame.Rect((roket_coord(b['dir'])),( 5, 5)),
+                         'color': BLUE,
+                         'dir': b['dir'],
+                         'long_iter': 100,
+                         'c1': 0,
+                         'damage' : 20
+                         }
+                    b['modesty_count'] = 0
+                    b['quantity_rocket'] -= 1
+                    rockets.append(r)
 
 
     for r in rockets:
@@ -268,7 +276,7 @@ while True:
 
 
         # Проверка, переместился ли блок за пределы окна.
-        if b['rect'].top < 0:
+        if b['rect'].bottom < 0:
             # Прохождение блока через верхнюю границу.
             if b['dir'] == UPLEFT:
                 b['dir'] = DOWNLEFT
@@ -276,7 +284,7 @@ while True:
                 b['dir'] = DOWNRIGHT
             if b['dir'] == UP:
                 b['dir'] = DOWNRIGHT
-        if b['rect'].bottom > WINDOWHEIGHT:
+        if b['rect'].top > WINDOWHEIGHT:
             # Прохождени блока через нижнюю границу.
             if b['dir'] == DOWNLEFT:
                 b['dir'] = UPLEFT
@@ -313,7 +321,10 @@ while True:
     for r in rockets:
         for b in boxes:
             if r['rect_r'].colliderect(b['rect']):
-                boxes.remove(b)
+                #rockets.remove(r)
+                b['health'] -= r['damage']
+                if b['health'] <= 0:
+                     boxes.remove(b)
 
     for r in rockets:
         pygame.draw.rect(windowSurface, r['color'], r['rect_r'])
@@ -324,6 +335,7 @@ while True:
 
     for b in boxes:
         b['c1'] += 1
+        b['modesty_count'] += 1
 
 
 
