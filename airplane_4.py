@@ -13,6 +13,16 @@ pygame.display.set_caption('Анимация')
 # Количество самолетов
 aircrafts = 10
 
+
+airImageUP = pygame.image.load('airUP.png')
+airImageDOWN = pygame.image.load('airDOWN.png')
+airImageLEFT = pygame.image.load('airLEFT.png')
+airImageRIGHT = pygame.image.load('airRIGHT.png')
+airImageUPLEFT = pygame.image.load('airUPLEFT.png')
+airImageUPRIGHT = pygame.image.load('airUPRIGHT.png')
+airImageDOWNLEFT = pygame.image.load('airDOWNLEFT.png')
+airImageDOWNRIGHT = pygame.image.load('airDOWNRIGHT.png')
+
 # Функция  выбора координат выстрела ракеты
 def roket_coord(dir):
     global roc_shot
@@ -34,6 +44,28 @@ def roket_coord(dir):
         roc_shot = b['rect'].bottomright
     return roc_shot
 
+# Выбор изображения при отбражении
+def image_choice(dir):
+    image_air = None
+    if dir == UP:
+        image_air = airImageUP
+    elif dir == DOWN:
+        image_air = airImageDOWN
+    elif dir == LEFT:
+        image_air = airImageRIGHT
+    elif dir == RIGHT:
+        image_air = airImageLEFT
+    elif dir == UPRIGHT:
+        image_air = airImageUPRIGHT
+    elif dir == UPLEFT:
+        image_air = airImageUPLEFT
+    elif dir == DOWNLEFT:
+        image_air = airImageDOWNLEFT
+    elif dir == DOWNRIGHT:
+        image_air = airImageDOWNRIGHT
+    return image_air
+
+
 # Создание переменных направления
 DOWNLEFT = 'downleft'
 DOWNRIGHT = 'downright'
@@ -52,7 +84,7 @@ MOVESPEED2 = 5
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+BLUE = (0, 100, 150)
 WHITE_R = (255, 255, 230)
 
 # Для имитации движения
@@ -76,7 +108,8 @@ for i in range(aircrafts):
          'long_iter': long_iter,
          'lost_vec': lost_vec,
          'c1':c1,
-         'locator':{'rect_loc': pygame.Rect(x_coord, y_coord, 100, 100),
+         'image_ch': image_choice(direct),
+         'locator':{'rect_loc': pygame.Rect(x_coord, y_coord, 200, 200),
                     'loc_color': WHITE_R}}
     boxes.append(b)
 
@@ -129,7 +162,7 @@ while True:
 
             b['c1'] = 0
             b['lost_vec'] = vec_air1
-            b['long_iter'] = random.randint(10, 30)
+            b['long_iter'] = random.randint(5, 20)
         else:
             continue
 
@@ -164,7 +197,7 @@ while True:
                      'color': BLUE,
                      'dir': b['dir'],
                      'long_iter': 100,
-                     'c1': c1,
+                     'c1': 0,
                      }
                 rockets.append(r)
 
@@ -271,25 +304,33 @@ while True:
 
 
         # Создание блока на поверхности
-        pygame.draw.rect(windowSurface, b['color'], b['rect'])
-        pygame.draw.rect(windowSurface, b['locator']['loc_color'], b['locator']['rect_loc'])
+        windowSurface.blit(image_choice(b['dir']), b['rect'])
+        #pygame.draw.rect(windowSurface, b['color'], b['rect'])
+        #pygame.draw.rect(windowSurface, b['locator']['loc_color'], b['locator']['rect_loc'])
+
+
 
     for r in rockets:
         for b in boxes:
-            if b['rect'].colliderect(r['rect_r']):
+            if r['rect_r'].colliderect(b['rect']):
                 boxes.remove(b)
 
     for r in rockets:
         pygame.draw.rect(windowSurface, r['color'], r['rect_r'])
+        r['c1'] += 1
+        if r['c1'] >= 50:
+            rockets.remove(r)
 
 
     for b in boxes:
         b['c1'] += 1
 
 
+
+
     # Вывод окна на экран.
     pygame.display.update()
-    time.sleep(0.01)
+    time.sleep(0.05)
 
 
 
