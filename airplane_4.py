@@ -3,15 +3,43 @@ from pygame.locals import *
 
 # Устнановка pygame
 pygame.init()
-
+###############################################################
+# Начальные настройки
+###############################################################
 # Настройка окна
-WINDOWWIDTH = 1000
-WINDOWHEIGHT = 1000
-windowSurface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), 0, 32)
-pygame.display.set_caption('Анимация')
-
+WINDOWWIDTH = 1000 # Ширина окна
+WINDOWHEIGHT = 1000 # Высота окна
 # Количество самолетов
-aircrafts = 20
+aircrafts = 40
+
+# Уровень здоровья самолета
+health = 10
+
+# Скрострельность самолетов чем меньше цифра тем быстрее стрельба
+modesty = 20
+
+# Количество ракет
+quantity_rocket = 50
+
+#Площадь локатора самолета длина и ширина охвата
+size_loc = 300
+
+# Длитеьность полета ракеты в одном направлении
+long_iter_min = 20
+long_iter_max = 80
+
+# Расстояние полета ракет
+long_iter_roc = 50
+
+# Урон от пападания ракеты
+damage = 10
+# Скорость обновления экрана
+time_update = 0.01
+
+############################################################################
+
+windowSurface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), 0, 32)
+pygame.display.set_caption('Имитация боя самолетов')
 
 
 airImageUP = pygame.image.load('airUP.png')
@@ -23,9 +51,10 @@ airImageUPRIGHT = pygame.image.load('airUPRIGHT.png')
 airImageDOWNLEFT = pygame.image.load('airDOWNLEFT.png')
 airImageDOWNRIGHT = pygame.image.load('airDOWNRIGHT.png')
 
+
 # Функция  выбора координат выстрела ракеты
 def roket_coord(dir):
-    global roc_shot
+    roc_shot = None
     if dir == UP:
         roc_shot = b['rect'].midtop
     if b['dir'] == DOWN:
@@ -43,6 +72,7 @@ def roket_coord(dir):
     if b['dir'] == DOWNRIGHT:
         roc_shot = b['rect'].bottomright
     return roc_shot
+
 
 # Выбор изображения при отбражении
 def image_choice(dir):
@@ -76,9 +106,8 @@ DOWN = 'down'
 LEFT = 'left'
 RIGHT = 'right'
 
-
 MOVESPEED1 = 2
-MOVESPEED2 = 5
+MOVESPEED2 = 4
 
 # Настройка цвета
 WHITE = (255, 255, 255)
@@ -107,15 +136,21 @@ for i in range(aircrafts):
          'dir': direct,
          'long_iter': long_iter,
          'lost_vec': lost_vec,
-         'c1':c1,
-         'health' : 100,
+         'c1': c1,
+         'health': health,
          'image_ch': image_choice(direct),
-         'modesty' : 20,
-         'modesty_count' : 0,
-         'quantity_rocket' : 100,
-         'locator':{'rect_loc': pygame.Rect(x_coord, y_coord, 1000, 1000),
-                    'loc_color': WHITE_R}}
+         'modesty': modesty ,
+         'modesty_count': 0,
+         'quantity_rocket': quantity_rocket,
+         'nomer': i,
+         'locator': {'rect_loc': pygame.Rect(x_coord, y_coord, size_loc, size_loc),
+                     'loc_color': WHITE_R}}
     boxes.append(b)
+
+# Общая сумма количества ракет всех самолетов
+summ_of_roc = 0
+for b in boxes:
+    summ_of_roc += b['quantity_rocket']
 
 # Запуск игрового цикла
 while True:
@@ -125,11 +160,10 @@ while True:
             pygame.quit()
             sys.exit()
 
-
     # Выбор случайного направления самолета 1
     for b in boxes:
         if b['c1'] == b['long_iter']:
-        # Делаем полет более реальным, выбор направления полета в зависимости от текущего направления
+            # Делаем полет более реальным, выбор направления полета в зависимости от текущего направления
             if b['lost_vec'] == 0:
                 vec_air1 = random.choice([7, 0, 1])
             elif b['lost_vec'] == 1:
@@ -166,10 +200,7 @@ while True:
 
             b['c1'] = 0
             b['lost_vec'] = vec_air1
-            b['long_iter'] = random.randint(5, 20)
-        else:
-            continue
-
+            b['long_iter'] = random.randint(long_iter_min, long_iter_max)
 
     # Создаем ракету
     # Условия запуска ракеты. Если по направлению движения самолета летит другой самолет.
@@ -192,23 +223,25 @@ while True:
         if b['dir'] == DOWNRIGHT:
             b['locator']['rect_loc'].topleft = b['rect'].bottomright
 
-
     # Проверяем попадание каждого самолета в поле локатора другого. Если самолет попадает в локатор то запускается ракета.
-    for i in range(len(boxes)-1):
+    for i in range(len(boxes)):
         for b in boxes:
             if boxes[i]['rect'].colliderect(b['locator']['rect_loc']):
                 if b['modesty_count'] >= b['modesty'] and b['quantity_rocket'] != 0:
-                    r = {'rect_r': pygame.Rect((roket_coord(b['dir'])),( 5, 5)),
+                    r = {'rect_r': pygame.Rect((roket_coord(b['dir'])), (5, 5)),
                          'color': BLUE,
                          'dir': b['dir'],
-                         'long_iter': 100,
+                         'long_iter': long_iter_roc,
                          'c1': 0,
-                         'damage' : 20
+                         'damage': damage,
+                         'n_roc': b['nomer']
                          }
                     b['modesty_count'] = 0
                     b['quantity_rocket'] -= 1
                     rockets.append(r)
 
+    # Создание на поверхности белого фона.
+    windowSurface.fill(WHITE)
 
     for r in rockets:
         # Перемещение ракет.
@@ -225,18 +258,13 @@ while True:
             r['rect_r'].centerx += MOVESPEED2
             r['rect_r'].centery -= MOVESPEED2
         elif r['dir'] == DOWN:
-           r['rect_r'].centery += MOVESPEED2
+            r['rect_r'].centery += MOVESPEED2
         elif r['dir'] == UP:
             r['rect_r'].centery -= MOVESPEED2
         elif r['dir'] == LEFT:
             r['rect_r'].centerx += MOVESPEED2
         elif r['dir'] == RIGHT:
             r['rect_r'].centerx -= MOVESPEED2
-
-
-
-    # Создание на поверхности белого фона.
-    windowSurface.fill(WHITE)
 
     for b in boxes:
 
@@ -262,8 +290,8 @@ while True:
             b['locator']['rect_loc'].centerx += MOVESPEED1
             b['locator']['rect_loc'].centery -= MOVESPEED1
         elif b['dir'] == DOWN:
-           b['rect'].centery += MOVESPEED1
-           b['locator']['rect_loc'].centery += MOVESPEED1
+            b['rect'].centery += MOVESPEED1
+            b['locator']['rect_loc'].centery += MOVESPEED1
         elif b['dir'] == UP:
             b['rect'].centery -= MOVESPEED1
             b['locator']['rect_loc'].centery -= MOVESPEED1
@@ -273,7 +301,6 @@ while True:
         elif b['dir'] == RIGHT:
             b['rect'].centerx -= MOVESPEED1
             b['locator']['rect_loc'].centerx -= MOVESPEED1
-
 
         # Проверка, переместился ли блок за пределы окна.
         if b['rect'].bottom < 0:
@@ -309,41 +336,52 @@ while True:
             if b['dir'] == RIGHT:
                 b['dir'] = DOWNLEFT
 
-
-
         # Создание блока на поверхности
         windowSurface.blit(image_choice(b['dir']), b['rect'])
-        #pygame.draw.rect(windowSurface, b['color'], b['rect'])
-        #pygame.draw.rect(windowSurface, b['locator']['loc_color'], b['locator']['rect_loc'])
+        # pygame.draw.rect(windowSurface, b['color'], b['rect'])
+        # pygame.draw.rect(windowSurface, b['locator']['loc_color'], b['locator']['rect_loc'])
 
-
-
-    for r in rockets:
-        for b in boxes:
-            if r['rect_r'].colliderect(b['rect']):
-                #rockets.remove(r)
-                b['health'] -= r['damage']
-                if b['health'] <= 0:
-                     boxes.remove(b)
 
     for r in rockets:
         pygame.draw.rect(windowSurface, r['color'], r['rect_r'])
-        r['c1'] += 1
-        if r['c1'] >= 50:
-            rockets.remove(r)
 
+    for r in rockets:
+        for b in boxes:
+            if r['rect_r'].colliderect(b['rect']) and r['n_roc'] != b['nomer']:
+                # rockets.remove(r)
+                b['health'] -= r['damage']
+                if b['health'] <= 0:
+                    boxes.remove(b)
+        r['c1'] += 1
+        if r['c1'] >= long_iter_roc:
+            rockets.remove(r)
 
     for b in boxes:
         b['c1'] += 1
         b['modesty_count'] += 1
-
-
+        #summ_of_roc -= b['quantity_rocket']
 
 
     # Вывод окна на экран.
     pygame.display.update()
-    time.sleep(0.05)
+    time.sleep(time_update)
 
+    if len(boxes) == 1:
+        n = boxes[0]['nomer']
+        winer = n
+        print("Победитель под номером: {}".format(winer))
+        exit()
+
+    for b in boxes:
+        summ_of_roc = 0
+        summ_of_roc += b['quantity_rocket']
+        if summ_of_roc ==  0:
+            lost_live = []
+            for b in boxes:
+                b = b['nomer']
+                lost_live.append(b)
+            print("Рокеты закончились. Остались самолеты под номерами: {}".format(lost_live))
+            exit()
 
 
 

@@ -135,7 +135,21 @@ class Locator:
     loc_color =  WHITE_R
 
 # Создание класса самолет
-class Aircraft:
+class Aircraft():
+    """ Созданеи самолета"""
+    def __init__(self, rect, dir, color, long_iter, lost_vec):
+        """ Конструктор самолета"""
+        self.rect = rect
+        self.dir = dir
+        self.color = color
+        self.long_iter = long_iter
+        self.lost_vec = lost_vec
+
+    def direct_air(self, dir):
+        self.dir = dir
+
+
+
     x_coord = random.randint(0, WINDOWWIDTH)
     y_coord = random.randint(0, WINDOWHEIGHT)
     direct = random.choice([UP, DOWNRIGHT, DOWN, DOWNLEFT, UPRIGHT, UPLEFT, LEFT, RIGHT])
